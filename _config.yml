@@ -1,1 +1,1 @@
-include: ["macro.js"]
+include: ["*.js"]
