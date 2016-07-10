@@ -63,5 +63,3 @@ function lex(code, lexis, located) {
 
   }.bind(/\n/g, code, lexis);
 }
-
-lex
