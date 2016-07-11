@@ -7,10 +7,12 @@ var lexis = [];
 function define(re) { return lexis.push('(' + re.source + ')') };
 
 var UNKNOWN = 0;
-var INCLUDE_L = define( / *\/\/#include!?\b.*/ );
-var INCLUDE_B = define( / *\/\*#include!?\b(?:[^*]|\*(?!\/))*\*\// );
+var INCLUDE_L = define( / *\/\/#include!?\b.*(?:[\n\u2028\u2029]|\r\n?)?/ );
+var INCLUDE_B = define( / *\/\*#include!?\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/ );
 var DEFINE_L = define( /\/\/#define\b.*(?:[\n\u2028\u2029]|\r\n?)?/ );
 var DEFINE_B = define( /\/\*#define\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/ );
+//var REGU_L = define( /\/\/#regu\b.*(?:[\n\u2028\u2029]|\r\n?)?/ );
+//var REGU_B = define( /\/\*#regu\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/ );
 var DENOTE = define( / *\/\*\/\/\/?[^*]*\*\/.*/ );
 var DENOTE_D = define( /\/\*\{![^*]*\*\// );
 var DENOTE_L = define( /\/\*\{[^*]*\*\// );
@@ -84,6 +86,10 @@ function makeCode(code, url, included, defined, indent) {
         makeDefine(s, defined);
         s = '';
       }
+      // else if (t == REGU_L || t == REGU_B) {
+      //   makeRegu(s, defined);
+      //   s = '';
+      // }
       else if (t == CURL_L) {        //遇到"{"将创建子作用域的状态:
         included = Object.create(included);
         defined = Object.create(defined);
@@ -107,6 +113,10 @@ function makeCode(code, url, included, defined, indent) {
       else if (t == DENOTE_D) {
         denoted = 2;
         s = '/*';
+      }
+      else if (t == REGEX) {
+        s = makeRegexp(s, defined);
+        s = indentLF(s, indent);
       }
       else if (t == UNKNOWN) {
         s = makeUnknown(s, defined);
@@ -189,7 +199,20 @@ function makeDenote(code) {
 }
 
 /**
- * makeCode(code, defined)
+ * makeRegexp(code, defined)
+ *    替换正则表达式中的宏
+ *
+ * @param code
+ * @param defined
+ * @returns {string}
+ */
+var reRegexpMarco = /<(\w+)>/g;
+function makeRegexp(code, defined) {
+  return code;
+}
+
+/**
+ * makeUnknown(code, defined)
  */
 var reParams = /\(\s*([^\)]*)\s*\)/;
 function makeUnknown(code, defined) {

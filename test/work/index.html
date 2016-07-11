@@ -1,19 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>make.js UTC</title>
+  <title>macro.js test</title>
   <link rel='stylesheet' href='https://h5js.github.io/inc/mocha.css' />
   <script src='https://h5js.github.io/inc/mocha.js'></script>
   <script src='https://h5js.github.io/inc/should.js'></script>
 </head>
 <body id="mocha">
 <script>mocha.setup('bdd')</script>
-<script src="../../../src/purl.js"></script>
-<script src="../../../src/get.js"></script>
-<script src="../../../src/lex.js"></script>
-<script src="../../../src/make.js"></script>
-<script src="https://h5js.github.io/its/its.js" its="case.js"></script>
+<script src="/macro/macro.js" fix="https://h5js.github.io/its/its.js" macro="test.js"></script>
 <script>mocha.run()</script>
 </body>
 </html>

@@ -10,12 +10,20 @@ describe('make.js', function(){
       //);
 
     });
-    describe("denote code", function(){
+
+    describe("#include", function(){
       //its(
-      Should(makeCode('/*//*/')).equal('//');;
+      Should(makeCode('//#include /macro/test/unit/make/inc/hello.js')).equal('hello');;
+      Should(makeCode('//#include /macro/test/unit/make/inc/hello.js\n//#include /macro/test/unit/make/inc/hello.js')).equal('hello');;
+      Should(makeCode('//#include /macro/test/unit/make/inc/hello.js\n//#include! /macro/test/unit/make/inc/hello.js')).equal('hellohello');;
+
+      Should(makeCode('/*#include /macro/test/unit/make/inc/hello.js*/')).equal('hello');;
+      Should(makeCode('/*#include /macro/test/unit/make/inc/hello.js*/\n/*#include /macro/test/unit/make/inc/hello.js*/')).equal('hello');;
+      Should(makeCode('/*#include /macro/test/unit/make/inc/hello.js*/\n/*#include! /macro/test/unit/make/inc/hello.js*/')).equal('hellohello');;
       //);
     });
-    describe("#define ...", function(){
+
+    describe("#define", function(){
       var src, des;
       //its(
       src = '//#define x 123\nx';;
@@ -24,6 +32,14 @@ describe('make.js', function(){
       Should(makeCode(src)).equal('123');;
       src = '/*#define x 123*/\nx';;
       Should(makeCode(src)).equal('123');;
+      //);
+    });
+
+    describe("denote code", function(){
+      //its(
+      Should(makeCode('/*//*/')).equal('//');;
+      Should(makeCode('/*//*/hello')).equal('//hello');;
+      Should(makeCode('/*//!*/hello')).equal('');;
       //);
     });
   });
