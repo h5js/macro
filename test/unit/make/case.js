@@ -23,15 +23,24 @@ describe('make.js', function(){
       //);
     });
 
-    describe("#define", function(){
-      var src, des;
+    describe("#define macro", function(){
       //its(
-      src = '//#define x 123\nx';;
-      Should(makeCode(src)).equal('123');;
-      src = '/*#define x 123*/x';;
-      Should(makeCode(src)).equal('123');;
-      src = '/*#define x 123*/\nx';;
-      Should(makeCode(src)).equal('123');;
+      Should(makeCode('//#define x 123\nx')).equal('123');;
+      Should(makeCode('/*#define x 123*/x')).equal('123');;
+      Should(makeCode('/*#define x 123*/\nx')).equal('123');;
+
+      Should(makeCode('//#define max(a, b) (a>b?a:b)\nmax(x, 5)')).equal('(x>5?x:5)');;
+      Should(makeCode('/*#define max(a, b) (a>b?a:b)*/max(x, 5)')).equal('(x>5?x:5)');;
+      Should(makeCode('/*#define max(a, b) (a>b?a:b)*/\nmax(x, 5)')).equal('(x>5?x:5)');;
+
+      //);
+    });
+
+    describe("#define regexp", function(){
+      //its(
+      Should(makeCode('//#define b /\\s*/\n/<b>/')).equal('/\\s*/');;
+      Should(makeCode('/*#define b /\\s+/*//<b>/')).equal('/\\s+/');;
+      Should(makeCode('/*#define b /\\s+/*/\n/<b>/')).equal('/\\s+/');;
       //);
     });
 

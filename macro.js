@@ -1,5 +1,25 @@
 (function(){
 /**
+ * lib.js
+ */
+
+var _test = RegExp.prototype.test;
+var isId = _test.bind(/[a..zA..Z_$][\w$]*/);
+
+function keynames(obj, fit) {
+  var keys = [], key;
+  if (typeof fit === 'functiion') {
+    for (key in obj)
+      if (filter(key)) {
+        keys.push(key);
+      }
+  }
+  else {
+    key = 0;
+    for(keys[key] in obj) key++;
+  }
+  return keys;
+}/**
  * purl.js
  */
 
@@ -93,56 +113,54 @@ function get(url) {
  * @returns {function}
  */
 function lex(code, lexis, located) {
-  return function(code, lexis) {
-    var $, ms, s, t, i, ln, w;
+  var ln, theSymbol, theIndex, lastIndex, l, c;
+  ln = /[\n\u2028\u2029]|\r\n?/g;
+  theIndex = lastIndex = l = c = 0;
 
-    if(lexis.$) { //若有缓存的符号, 则先返回缓存的符号
-      $ = lexis.$;
-      lexis.$ = 0;
-      s = $.s;
-    }
-    else if( ms = lexis.exec(code)) { //搜寻下一个词汇
-      s = ms[0];                    //取词汇符号原文 s
-      for(t=ms.length;!ms[--t];);   //计算词汇符号类型 t
-      i = ms.index;                 //记下词汇符号位置 i
-      $ = {s: s, t: t, i: i };      //形成词汇符号对象 $
+  return function() {
+    var Symbol, ms, s, t, w;
 
-      if(lexis.i ^ i) {   //若解析开始位置与词汇符号未知不一致, 则中间有未知符号
-        lexis.$ = $;                    //词汇符号应该缓存到下次读取
-        s = code.substring(lexis.i, i); //取未知符号原文 s
-        $ = {s: s, t: 0, i: lexis.i|0};   //形成未知符号 $
-      }
-      lexis.i = lexis.lastIndex;
+    if(lastIndex^theIndex) { //若有缓存的符号, 则先返回缓存的符号
+      Symbol = theSymbol;
+      s = Symbol.s;
+      theIndex = lastIndex;
     }
-    else {  //若搜寻结束后解析尾部
-      i = code.length;  //记下结束位置;
-      if(lexis.i ^ i) {  //若解析开始位置与结束位置不一致, 则尾部是未知符号
-        s = code.substring(lexis.i);      //取未知符号原文 s
-        $ = {s: s, t: 0, i: lexis.i|0};   //形成未知符号 $
-        lexis.i = lexis.lastIndex = i;    //下次从结束位值开始, 确保下次解析结束
+    else {
+      lexis.lastIndex = lastIndex;  //恢复状态
+      if (ms = lexis.exec(code)) { //搜寻下一个词汇
+        s = ms[0];                    //取词汇符号原文 s
+        for (t = ms.length; ms[--t] === undefined;);   //计算词汇符号类型 t
+        theIndex = ms.index;                 //记下词汇符号位置 i
+        Symbol = {s: s, t: t, i: theIndex};      //形成词汇符号对象 Symbol
       }
       else {
-        lexis.i = 0;  //解析结束, 但设置lexis为0可让解析器开始新的一轮循环
+        theIndex = code.length;
+      }
+
+      if (lastIndex ^ theIndex) {   //若解析开始位置与词汇符号未知不一致, 则中间有未知符号
+        theSymbol = Symbol;                    //词汇符号应该缓存到下次读取
+        s = code.substring(lastIndex, theIndex); //取未知符号原文 s
+        Symbol = {s: s, t: 0, i: lastIndex};   //形成未知符号 Symbol
+        lastIndex = lexis.lastIndex || theIndex;
+      }
+      else {
+        lastIndex = theIndex = lexis.lastIndex;
       }
     }
-
+    
     //下面计算符号在源代码中的行列位置:
-    if(located && $) {
-      ln = this;          //换行符正则式
-      $.l |= lexis.l;     //设置符号的行为本次解析的行位置
-      $.c |= lexis.c;     //设置符号的列为本次解析的列位置
+    if(located && Symbol) {
+      Symbol.l = l;     //设置符号的行为本次解析的行位置
+      Symbol.c = c;     //设置符号的列为本次解析的列位置
       w = s.length;       //记录符号字符串长度
-      lexis.l = $.l;      //默认下次解析的行号不变
-      lexis.c = $.c + w;  //默认下次解析的列号为原列号加上本次符号的长度
+      c += w;  //默认下次解析的列号为原列号加上本次符号的长度
       while(ln.exec(s)) {             //若本次符号解析到换行
-        lexis.l ++;                   //下次解析的行号+1
-        lexis.c = w - ln.lastIndex;   //下次解析的列号就是符号原文最后一行的字符数
+        l ++;                   //下次解析的行号+1
+        c = w - ln.lastIndex;   //下次解析的列号就是符号原文最后一行的字符数
       }
     }
-
-    return $;
-
-  }.bind(/\n/g, code, lexis);
+    return Symbol;
+  };
 }
 /**
  * make.js
@@ -150,30 +168,34 @@ function lex(code, lexis, located) {
 
 //构造分解代码的正则式及词汇项类型常量:
 var lexis = [];
-function define(re) { return lexis.push('(' + re.source + ')') };
+function define(re) {
+  return lexis.push('(' + re.source + ')')
+};
 
 var UNKNOWN = 0;
-var INCLUDE_L = define( / *\/\/#include!?\b.*/ );
-var INCLUDE_B = define( / *\/\*#include!?\b(?:[^*]|\*(?!\/))*\*\// );
-var DEFINE_L = define( /\/\/#define\b.*(?:[\n\u2028\u2029]|\r\n?)?/ );
-var DEFINE_B = define( /\/\*#define\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/ );
-var DENOTE = define( / *\/\*\/\/\/?[^*]*\*\/.*/ );
-var DENOTE_D = define( /\/\*\{![^*]*\*\// );
-var DENOTE_L = define( /\/\*\{[^*]*\*\// );
-var DENOTE_R = define( /\/\*}[^*]*\*\// );
-var COMMENT_L = define( /\/\/.*/ );
-var COMMENT_B = define( /\/\*[^*]*\*+(?:[^/][^*]*\*+)*\// );
-var STRING_S = define( /'(?:[^'\\\n\r\u2028\u2029]|\\(?:.|[\n\u2028\u2029]|\r\n?))*(?:'|[\n\u2028\u2029]|\r\n?)/ );
-var STRING_D = define( /"(?:[^"\\\n\r\u2028\u2029]|\\(?:.|[\n\u2028\u2029]|\r\n?))*(?:"|[\n\u2028\u2029]|\r\n?)/ );
-var STRING_X = define( /`(?:[^`\\]|\\[\s\S])*`/ );
-var REGEX = define( /\/(?:\\.|\[(?:\\.|[^\]])*\]|[^\/\*\n\r])(?:\\.|\[(?:\\.|[^\]])*\]|[^/\n\r])*?\/[gimy]*/ );
-var CURL_L = define( /{/ );
-var CURL_R = define( /}/ );
+var INCLUDE_L = define(/ *\/\/#include!?\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
+var INCLUDE_B = define(/ *\/\*#include!?\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
+var DEFINE_L = define(/\/\/#define\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
+var DEFINE_B = define(/\/\*#define\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
+//var REGU_L = define( /\/\/#regu\b.*(?:[\n\u2028\u2029]|\r\n?)?/ );
+//var REGU_B = define( /\/\*#regu\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/ );
+var DENOTE = define(/ *\/\*\/\/\/?[^*]*\*\/.*/);
+var DENOTE_D = define(/\/\*\{![^*]*\*\//);
+var DENOTE_L = define(/\/\*\{[^*]*\*\//);
+var DENOTE_R = define(/\/\*}[^*]*\*\//);
+var COMMENT_L = define(/\/\/.*/);
+var COMMENT_B = define(/\/\*[^*]*\*+(?:[^/][^*]*\*+)*\//);
+var STRING_S = define(/'(?:[^'\\\n\r\u2028\u2029]|\\(?:.|[\n\u2028\u2029]|\r\n?))*(?:'|[\n\u2028\u2029]|\r\n?)/);
+var STRING_D = define(/"(?:[^"\\\n\r\u2028\u2029]|\\(?:.|[\n\u2028\u2029]|\r\n?))*(?:"|[\n\u2028\u2029]|\r\n?)/);
+var STRING_X = define(/`(?:[^`\\]|\\[\s\S])*`/);
+var REGEX = define(/\/(?:\\.|\[(?:\\.|[^\]])*\]|[^\/\*\n\r])(?:\\.|\[(?:\\.|[^\]])*\]|[^/\n\r])*?\/[gimy]*/);
+var CURL_L = define(/{/);
+var CURL_R = define(/}/);
 
 lexis = RegExp(lexis.join('|'), 'g');
 
 function make(url, included, defined, indent) {
-  included  || ( included = Object.create(null) );
+  included || ( included = Object.create(null) );
   defined || ( defined = Object.create(null) );
   indent || ( indent = '' );
 
@@ -198,7 +220,7 @@ function make(url, included, defined, indent) {
  * @returns {string}
  */
 function makeCode(code, url, included, defined, indent) {
-  included  || ( included = Object.create(null) );
+  included || ( included = Object.create(null) );
   defined || ( defined = Object.create(null) );
   indent || ( indent = '' );
 
@@ -208,28 +230,32 @@ function makeCode(code, url, included, defined, indent) {
   while (item = read()) {
     var s = item.s;
     var t = item.t;
-    if (denoted == 1) {
-      if (t == DENOTE_R) {
+    if (denoted == 1) {   //注释跳过状态:
+      if (t == DENOTE_R) {    //遇到注释结束符, 追加一个 "*/"
         denoted = 0;
         code.push('*/');
       }
-      else if (t != COMMENT_B) {
+      else if (t != COMMENT_B) {  //其他符号原样送回
         code.push(indentLF(s, indent));
       }
     }
-    else if (denoted == 2) {
+    else if (denoted == 2) {  //注释删除状态:
       if (t == DENOTE_R) {
         denoted = 0;
       }
     }
-    else {
+    else {  //正常解析状态:
       if (t == INCLUDE_L || t == INCLUDE_B) {
         s = makeInclude(s, url, included, defined, indent);
       }
       else if (t == DEFINE_L || t == DEFINE_B) {
-        makeDefine(s, defined);
+        makeDefine(s, url, included, defined);
         s = '';
       }
+      // else if (t == REGU_L || t == REGU_B) {
+      //   makeRegu(s, defined);
+      //   s = '';
+      // }
       else if (t == CURL_L) {        //遇到"{"将创建子作用域的状态:
         included = Object.create(included);
         defined = Object.create(defined);
@@ -253,6 +279,10 @@ function makeCode(code, url, included, defined, indent) {
       else if (t == DENOTE_D) {
         denoted = 2;
         s = '/*';
+      }
+      else if (t == REGEX) {
+        s = makeRegexp(s, defined);
+        s = indentLF(s, indent);
       }
       else if (t == UNKNOWN) {
         s = makeUnknown(s, defined);
@@ -292,29 +322,20 @@ function makeInclude(code, url, included, defined, indent) {
 /**
  * makeDefine(code, defined)
  */
-var reDefine = /\/[*/]#define\s*(\w+)\s*(?:\(\s*([^)]*)\s*\))?\s*((?:[^*]|\*(?!\/))*)/;
-function makeDefine(code, defined) {
+var reDefine = /\/\/#define\s*(\w+)\s*(?:\s*\(\s*([^)]*)\))?\s*(.*)|\/\*#define\s*(\w+)\s*(?:\s*\(\s*([^)]*)\))?\s*((?:[^*]|\*(?!\/))*)/;
+function makeDefine(code, url, included, defined) {
   var ms = code.match(reDefine);
   if (ms) {
-    var name = ms[1], args = ms[2], body = ms[3].trim();
+    var name = ms[1] || ms[4], args = ms[2] || ms[5], body = (ms[3] || ms[6]).trim();
     if (body) {
+      body = makeCode(body, url, included, defined);
       var macro = {s: body};
-      var re = '\\b' + name + '\\b';
       if (args) {
-        re += '\\s*\\([^\\)]*\\)';
         macro.p = RegExp(args.replace(/(\w+)/g, '(\\b$1\\b)').replace(/\s*,\s*/g, '|'), 'g');
       }
-      macro.r = '(' + re + ')';
-      defined['$' + name] = macro;
-      re = [];
-      for (name in defined) {
-        if (name[0] == '$') {
-          macro = defined[name];
-          re.push(macro.r);
-          defined[re.length] = macro;
-        }
-      }
-      defined[0] = RegExp(re.join('|'), 'g');
+      defined[name] = macro;
+      name = keynames(defined, isId);
+      defined[0] = RegExp('\\b(' + name.join('|') + ')\\b(?:\\s*\\(([^)]*)\\))?', 'g');
     }
   }
 }
@@ -323,6 +344,8 @@ function makeDefine(code, defined) {
  * makeDenote(code)
  */
 var reDenote = /( *)\/\*\s*\/\/(!?)[^*]*\*\/(.*)/;
+
+/*#defined b /(?:\s*)/ */
 function makeDenote(code) {
   var ms = code.match(reDenote);
   if (ms[2]) {
@@ -335,49 +358,64 @@ function makeDenote(code) {
 }
 
 /**
- * makeCode(code, defined)
+ * makeRegexp(code, defined)
+ *    替换正则表达式中的宏
+ *
+ * @param code
+ * @param defined
+ * @returns {string}
  */
-var reParams = /\(\s*([^\)]*)\s*\)/;
+var reRegu = /<([a-zA-Z_$][$\w]*)>/g;
+function makeRegexp(code, defined) {
+  return code.replace(reRegu, function (s, name) {
+    var macro, re, i;
+    if (macro = defined[name]) {
+      re = macro.s;
+      if (re[0] == '/' && (i = re.lastIndexOf('/')) > 1) {
+        s = re.substring(1, i);
+      }
+    }
+    return s;
+  });
+}
+
+/**
+ * makeUnknown(code, defined)
+ */
 function makeUnknown(code, defined) {
   var re = defined[0];
-  if (re) {
-    code = code.replace(defined[0], function (s) {
-      var args = arguments, len = args.length - 2;
-      for (var i = 1; i < len; i++) {
-        if (args[i]) {
-          var macro = defined[i];
-          if (macro.p) {
-            if (s = s.match(reParams)) {
-              s = s[1].split(/\s*,\s*/);
-              s = macro.s.replace(macro.p, function (p) {
-                var args = arguments, len = args.length - 2, i;
-                for (i = 1; i < len; i++) {
-                  if (args[i]) {
-                    p = s[i - 1];
-                    break;
-                  }
-                }
-                return p;
-              });
+
+  return re ?
+    code.replace(re, function (s, name, param) {
+      var macro;
+      if (macro = defined[name]) {
+        if (macro.p && param) {
+          param = param.split(/\s*,\s*/);
+          s = macro.s.replace(macro.p, function (p) {
+            var args = arguments, len = args.length - 2, i;
+            for (i = 1; i < len; i++) {
+              if (args[i]) {
+                p = param[i - 1];
+                break;
+              }
             }
-          }
-          else {
-            s = macro.s;
-          }
-          break;
+            return p;
+          });
+        }
+        else {
+          s = macro.s;
         }
       }
       return s;
-    });
-  }
-  return code;
+    })
+    : code;
 }
 
 /**
  * indentLF(code, indent)
  */
-function indentLF(code, indent){
-  return code.replace(/\n+/g, '$&'+indent);
+function indentLF(code, indent) {
+  return code.replace(/\n+/g, '$&' + indent);
 }/**
  * main.js
  */
