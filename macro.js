@@ -326,9 +326,9 @@ var reDefine = /\/\/#define\s*(\w+)\s*(?:\s*\(\s*([^)]*)\))?\s*(.*)|\/\*#define\
 function makeDefine(code, url, included, defined) {
   var ms = code.match(reDefine);
   if (ms) {
-    var name = ms[1] || ms[4], args = ms[2] || ms[5], body = (ms[3] || ms[6]).trim();
+    var name = ms[1] || ms[4], args = ms[2] || ms[5], body = ms[3] || ms[6];
     if (body) {
-      body = makeCode(body, url, included, defined);
+      body = makeCode(body.trim(), url, included, defined);
       var macro = {s: body};
       if (args) {
         macro.p = RegExp(args.replace(/(\w+)/g, '(\\b$1\\b)').replace(/\s*,\s*/g, '|'), 'g');
