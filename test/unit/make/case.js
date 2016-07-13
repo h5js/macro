@@ -25,6 +25,16 @@ describe('make.js', function(){
 
     describe("#define macro", function(){
       //its(
+      makeCode('//#define ').should.equal('');;
+      makeCode('//#define \n').should.equal('');;
+      makeCode('/*#define */').should.equal('');;
+      makeCode('/*#define */\n').should.equal('');;
+
+      makeCode('//#define x').should.equal('');;
+      makeCode('//#define x\n').should.equal('');;
+      makeCode('/*#define x*/').should.equal('');;
+      makeCode('/*#define x*/\n').should.equal('');;
+
       Should(makeCode('//#define x 123\nx')).equal('123');;
       Should(makeCode('/*#define x 123*/x')).equal('123');;
       Should(makeCode('/*#define x 123*/\nx')).equal('123');;
