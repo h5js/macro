@@ -4,11 +4,11 @@
  */
 
 var _test = RegExp.prototype.test;
-var isId = _test.bind(/[a..zA..Z_$][\w$]*/);
+var isId = _test.bind(/^[a..zA..Z_$][\w$]*$/);
 
 function keynames(obj, fit) {
   var keys = [], key;
-  if (typeof fit === 'functiion') {
+  if (typeof fit === 'function') {
     for (key in obj)
       if (filter(key)) {
         keys.push(key);
