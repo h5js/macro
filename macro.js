@@ -4,13 +4,13 @@
  */
 
 var _test = RegExp.prototype.test;
-var isId = _test.bind(/^[a..zA..Z_$][\w$]*$/);
+var isId = _test.bind(/^[a-zA-Z_$][\w$]*$/);
 
 function keynames(obj, fit) {
   var keys = [], key;
   if (typeof fit === 'function') {
     for (key in obj)
-      if (filter(key)) {
+      if (fit(key)) {
         keys.push(key);
       }
   }
@@ -175,8 +175,8 @@ function define(re) {
 var UNKNOWN = 0;
 var INCLUDE_L = define(/ *\/\/#include!?\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
 var INCLUDE_B = define(/ *\/\*#include!?\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
-var DEFINE_L = define(/\/\/#define\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
-var DEFINE_B = define(/\/\*#define\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
+var DEFINE_L = define(/[ \t]*\/\/#define\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
+var DEFINE_B = define(/[ \t]*\/\*#define\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
 //var REGU_L = define( /\/\/#regu\b.*(?:[\n\u2028\u2029]|\r\n?)?/ );
 //var REGU_B = define( /\/\*#regu\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/ );
 var DENOTE = define(/ *\/\*\/\/\/?[^*]*\*\/.*/);

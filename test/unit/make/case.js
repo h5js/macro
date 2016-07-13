@@ -30,6 +30,11 @@ describe('make.js', function(){
       makeCode('/*#define */').should.equal('');;
       makeCode('/*#define */\n').should.equal('');;
 
+      makeCode('  //#define ').should.equal('');;
+      makeCode('  //#define \n').should.equal('');;
+      makeCode('  /*#define */').should.equal('');;
+      makeCode('  /*#define */\n').should.equal('');;
+
       makeCode('//#define x').should.equal('');;
       makeCode('//#define x\n').should.equal('');;
       makeCode('/*#define x*/').should.equal('');;

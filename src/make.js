@@ -11,8 +11,8 @@ function define(re) {
 var UNKNOWN = 0;
 var INCLUDE_L = define(/ *\/\/#include!?\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
 var INCLUDE_B = define(/ *\/\*#include!?\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
-var DEFINE_L = define(/\/\/#define\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
-var DEFINE_B = define(/\/\*#define\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
+var DEFINE_L = define(/[ \t]*\/\/#define\b.*(?:[\n\u2028\u2029]|\r\n?)?/);
+var DEFINE_B = define(/[ \t]*\/\*#define\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/);
 //var REGU_L = define( /\/\/#regu\b.*(?:[\n\u2028\u2029]|\r\n?)?/ );
 //var REGU_B = define( /\/\*#regu\b(?:[^*]|\*(?!\/))*\*\/(?:[\n\u2028\u2029]|\r\n?)?/ );
 var DENOTE = define(/ *\/\*\/\/\/?[^*]*\*\/.*/);
