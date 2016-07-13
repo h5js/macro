@@ -45,11 +45,10 @@ any source code block ...
 ```
 若"{"后紧跟一个"!", 则删除从该代码块, 否则只是注释掉该代码块. 若"/\*{\*/"没有匹配的"/\*}\*/", 则将删除或注释掉从"/\*{\*/"至该代码文件结束的所有代码. 
 
-## TODO
-### 正则片段
-正则片段指令用于定义一个正则表达式片段的宏：
+### 正则宏
+可以用#define指令定义正则表达式的宏：
 ```javascript
-/*#regu name regular-express */
-//#regu name regular-express
+/*#define name regular-express */
+//#define name regular-express
 ```
-之后，正则表达式中可以用 &lt;name&gt; 来表示宏，其将被替换成正则片段内容。  
+之后，正则表达式中可以用 &lt;name&gt; 来表示宏，其将被替换成正则宏的内容。  
