@@ -25,7 +25,7 @@ if (urls = script.getAttribute('fix')) {
     }
 }
 
-if (script.hasAttribute('macro')) {
+if(urls = script.getAttribute('macro')) {
   urls = script.getAttribute('macro').split(reUrls);
   for (i = 0; i < urls.length; i++)
     if (url = urls[i]) {
@@ -35,8 +35,16 @@ if (script.hasAttribute('macro')) {
       code += '\n//# sourceURL=' + url;
       window.eval(code);
     }
-  code = makeCode(script.text);
-  code = fixing(code);
+}
+
+code = script.text;
+var run = /^\s*\/\/#run\b/.test(code);
+
+code = makeCode(code);
+code = fixing(code);
+script.text = code;
+
+if(run) {
   if (url = script.getAttribute('name')) {
     code += '\n//# sourceURL=' + purl(url, home + '/');
   }
