@@ -445,10 +445,11 @@ if (urls = script.getAttribute('fix')) {
 
 if(urls = script.getAttribute('macro')) {
   urls = script.getAttribute('macro').split(reUrls);
+  var included = {}, defined = {};
   for (i = 0; i < urls.length; i++)
     if (url = urls[i]) {
       url = purl(url, home);
-      code = make(url);
+      code = make(url, included, defined);
       code = fixing(code);
       code += '\n//# sourceURL=' + url;
       window.eval(code);
