@@ -403,7 +403,7 @@ function makeUnknown(code, defined) {
           });
         }
         else {
-          s = macro.s;  // +'/*'+name+'*/';
+          s = macro.s +'/*'+name+'*/';
         }
       }
       return s;
