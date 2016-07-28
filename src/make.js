@@ -41,7 +41,7 @@ function make(url, included, defined, indent) {
   else {
     included[url] = 1;
     code = get(url);
-    code = makeCode(code, url, included, defined, indent);
+    code = makeCode(code, url, included, defined, indent, 1);
   }
   return code;
 }
@@ -55,7 +55,7 @@ function make(url, included, defined, indent) {
  * @param indent
  * @returns {string}
  */
-function makeCode(code, url, included, defined, indent) {
+function makeCode(code, url, included, defined, indent, commented) {
   included || ( included = Object.create(null) );
   defined || ( defined = Object.create(null) );
   indent || ( indent = '' );
@@ -121,7 +121,7 @@ function makeCode(code, url, included, defined, indent) {
         s = indentLF(s, indent);
       }
       else if (t == UNKNOWN) {
-        s = makeUnknown(s, defined);
+        s = makeUnknown(s, defined, commented);
         s = indentLF(s, indent);
       }
       else if (t == COMMENT_B) {
@@ -218,7 +218,7 @@ function makeRegexp(code, defined) {
 /**
  * makeUnknown(code, defined)
  */
-function makeUnknown(code, defined) {
+function makeUnknown(code, defined, commented) {
   var re = defined[0];
 
   return re ?
@@ -239,7 +239,10 @@ function makeUnknown(code, defined) {
           });
         }
         else {
-          s = macro.s +'/*'+name+'*/';
+          s = macro.s;
+        }
+        if(commented) {
+          s += '/*'+name+'*/';
         }
       }
       return s;
