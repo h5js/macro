@@ -239,7 +239,7 @@ function makeUnknown(code, defined) {
           });
         }
         else {
-          s = macro.s;
+          s = macro.s;  // +'/*'+name+'*/';
         }
       }
       return s;

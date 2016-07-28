@@ -25,9 +25,9 @@ if (urls = script.getAttribute('fix')) {
     }
 }
 
+var included = {}, defined = {};
 if(urls = script.getAttribute('macro')) {
   urls = script.getAttribute('macro').split(reUrls);
-  var included = {}, defined = {};
   for (i = 0; i < urls.length; i++)
     if (url = urls[i]) {
       url = purl(url, home);
@@ -41,7 +41,7 @@ if(urls = script.getAttribute('macro')) {
 code = script.text;
 var run = /^\s*\/\/#run\b/.test(code);
 
-code = makeCode(code);
+code = makeCode(code, included, defined);
 code = fixing(code);
 script.text = code;
 
