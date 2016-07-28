@@ -41,7 +41,7 @@ if(urls = script.getAttribute('macro')) {
 code = script.text;
 var run = /^\s*\/\/#run\b/.test(code);
 
-code = makeCode(code, included, defined);
+code = makeCode(code, home, included, defined);
 code = fixing(code);
 script.text = code;
 
