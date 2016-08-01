@@ -10,11 +10,26 @@
 <body id="mocha">
 <script>mocha.setup('bdd')</script>
 <script src="../../../src/lib.js"></script>
+<script src="../../../src/eval.js"></script>
 <script src="../../../src/purl.js"></script>
 <script src="../../../src/get.js"></script>
 <script src="../../../src/lex.js"></script>
 <script src="../../../src/make.js"></script>
 <script src="https://h5js.github.io/its/its.js" its="case.js"></script>
-<script>mocha.run()</script>
+<script>
+  mocha.run();
+
+  setTimeout(function(){
+    var end = document.querySelector('.fail');
+    if(!end) {
+      end = document.querySelectorAll('ul');
+      if(end) {
+        end = end[end.length-1];
+      }
+    }
+    if(end)
+      end.scrollIntoView()
+  }, 0);
+</script>
 </body>
 </html>

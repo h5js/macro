@@ -27,8 +27,9 @@ function lex(code, lexis, located) {
     else {
       lexis.lastIndex = lastIndex;  //恢复状态
       if (ms = lexis.exec(code)) { //搜寻下一个词汇
-        s = ms[0];                    //取词汇符号原文 s
+        //s = ms[0];                    //取词汇符号原文 s
         for (t = ms.length; ms[--t] === undefined;);   //计算词汇符号类型 t
+        s = ms[t];
         theIndex = ms.index;                 //记下词汇符号位置 i
         Symbol = {s: s, t: t, i: theIndex};      //形成词汇符号对象 Symbol
       }

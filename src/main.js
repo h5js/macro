@@ -16,7 +16,7 @@ if (urls = script.getAttribute('fix')) {
   for (i = 0; i < urls.length; i++)
     if (url = urls[i]) {
       url = purl(url, home);
-      code = make(url);
+      code = get(url);
       code += '\n//# sourceURL=' + url;
       fix = window.eval(code);
       if (typeof fix == 'function') {
@@ -25,13 +25,14 @@ if (urls = script.getAttribute('fix')) {
     }
 }
 
-var included = {}, defined = {};
+var context = Context();
+
 if(urls = script.getAttribute('macro')) {
   urls = script.getAttribute('macro').split(reUrls);
   for (i = 0; i < urls.length; i++)
     if (url = urls[i]) {
       url = purl(url, home);
-      code = make(url, included, defined);
+      code = make(context, url);
       code = fixing(code);
       code += '\n//# sourceURL=' + url;
       window.eval(code);
@@ -41,7 +42,7 @@ if(urls = script.getAttribute('macro')) {
 code = script.text;
 var run = /^\s*\/\/#run\b/.test(code);
 
-code = makeCode(code, home, included, defined, '', 1);
+code = makeCode(context, code, home);
 code = fixing(code);
 script.text = code;
 

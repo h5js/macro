@@ -1,9 +1,9 @@
 //#define MAX_LEN 123
 //#define NO(x) "01234"[x]
-//#define id /[a-zA-Z_$][\w$]*/
+//#define id = /[a-zA-Z_$][\w$]*/
 //#define blank /\s+/
 //#define number /\d+/
-//#define sys_id /$<id>/
+//#define sys_id = /$<id>/
 
 describe('test.js', function(){
   describe('macro.js is unseen', function(){
