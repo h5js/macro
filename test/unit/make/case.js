@@ -56,9 +56,9 @@ describe('make.js', function(){
       var macro;
       //its(
       macro = makeCode.bind(undefined, Context());;
-      Should(macro('//#define b /\\s*/\n/<b>/')).equal('/\\s*/');;
-      Should(macro('/*#define b /\\s+/*//<b>/')).equal('/\\s+/');;
-      Should(macro('/*#define b /\\s+/*/\n/<b>/')).equal('/\\s+/');;
+      Should(macro('//#define b=/\\s*/\n/<b>/')).equal('/\\s*/');;
+      Should(macro('/*#define b=/\\s+/*//<b>/')).equal('/\\s+/');;
+      Should(macro('/*#define b=/\\s+/*/\n/<b>/')).equal('/\\s+/');;
       //);
     });
 

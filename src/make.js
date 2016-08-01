@@ -222,9 +222,8 @@ function makeRun(context, s) {
 var reRegu = /<([a-zA-Z_$][$\w]*)>/g;
 function makeRegexp(context, code) {
   return code.replace(reRegu, function (s, name) {
-    var macro, re, i;
-    if (macro = context.defined[name]) {
-      re = macro.s;
+    var re, i;
+    if (re = String(context.variables[name])) {
       if (re[0] == '/' && (i = re.lastIndexOf('/')) > 1) {
         s = re.substring(1, i);
       }

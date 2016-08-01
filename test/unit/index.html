@@ -23,6 +23,20 @@
     //)
   });
 </script>
-<script>mocha.run()</script>
+<script>
+  mocha.run();
+
+  setTimeout(function(){
+    var end = document.querySelector('.fail');
+    if(!end) {
+      end = document.querySelectorAll('ul');
+      if(end) {
+        end = end[end.length-1];
+      }
+    }
+    if(end)
+      end.scrollIntoView()
+  }, 0);
+</script>
 </body>
 </html>
