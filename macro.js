@@ -497,7 +497,7 @@ if(urls = script.getAttribute('macro')) {
       url = purl(url, home);
       code = make(context, url);
       code = fixing(code);
-      code += '\n//# sourceURL=' + url;
+      code = '"use strict";\n' + code + '\n//# sourceURL=' + url;
       window.eval(code);
     }
 }
@@ -511,7 +511,7 @@ script.text = code;
 
 if(run) {
   if (url = script.getAttribute('name')) {
-    code += '\n//# sourceURL=' + purl(url, home + '/');
+    code = '"use strict";\n' + code + '\n//# sourceURL=' + purl(url, home + '/');
   }
   window.eval(code);
 }
