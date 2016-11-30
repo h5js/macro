@@ -9,11 +9,14 @@
 </head>
 <body id="mocha">
 <script>mocha.setup('bdd')</script>
+<script src="../../../src/lib.js"></script>
+<script src="../../../src/eval.js"></script>
 <script src="../../../src/get.js"></script>
 <script src="../../../src/purl.js"></script>
 <script src="../../../src/lex.js"></script>
 <script src="../../../src/make.js"></script>
 <script src="../../../src/main.js" fix="https://h5js.github.io/its/its.js" macro="case.js">
+  //#run
   describe('<script macro="...">', function(){
     //its(
     Should('its running with macro').ok;
