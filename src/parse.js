@@ -4,52 +4,56 @@
 var Parse = function () {
   var reSplitGrammar = /(?:^|[ \t]*\n)[ \t]*(?:\n[ \t]*)+|\s*$/;
   var reSplitBlock = /[ \t]*\n[ \t]*/;
-  var reSymbol = /(?:\/.*?\/|[A-Za-z]\w*|\d+)[?+*]?/g;
+  //var reSymbol = /(?:\/.*?\/|[A-Za-z]\w*|\d+)[?+*]?/g;
+  var reSymbol = /(?:\/(?:\\.|\[(?:\\.|[^\]])*]|[^\/*\n\r])(?:\\.|\[(?:\\.|[^\]])*]|[^/\n\r])*?\/|[A-Za-z]\w*|\d+)[?+*]?|(\S+)/g;
   var tags = '?+*';
   var reNext = /\s*(?:\S+|$)/g;
 
   return Parse;
 
   function Parse(grammar) {
-    if (isString(grammar)) {
+    if (isString(grammar))
       grammar = init(grammar);
+
+    var names = getOwnPropertyNames(grammar), circle = [];
+    for (var i = names.length; i--;) {
+      link(names[i]);
     }
-    linkGrammar(grammar);
+
     return bind(parse, grammar);
-  }
 
-  // 创建语法的基础符号表
-  function init(code) {
-    var grammar = object();
-    code = split(code, reSplitGrammar);
+    // 创建语法的基础符号表
+    function init(code) {
+      var grammar = object();
+      code = split(code, reSplitGrammar);
 
-    for (var s = code.length; s--;) {
-      var block = code[s];
-      if (block) {
-        var i = indexOf(block, ':');
-        var name = trim(slice(block, 0, i));
-        if (name) {
+      for (var s = code.length; s--;) {
+        var block = code[s];
+        if (block) {
+          var i = indexOf(block, ':');
+          var name = trim(slice(block, 0, i));
+          if (!name)
+            throw error('Grammar has no named block.');
           var symbol = object();
           block = trim(slice(block, i + 1));
           block = split(block, reSplitBlock);
           var row;
           for (var p = 0; row = block[p]; p++) {
-            var produce = object();
-            if (row = match(row, reSymbol)) {
-              for (i = 0; i < row.length; i++) {
-                produce[i] = row[i];
-              }
-              produce.l = i;
+            var produce = object(), col;
+            for (i = 0, reSymbol.lastIndex = 0; col = reSymbol.exec(row); i++) {
+              if (col[1])
+                throw error('Grammar %s error: %s', name, col[1]);
+              produce[i] = col[0];
             }
-            else {
-              throw error('symbol % production %d error!', name, p);
-            }
+            if (!i)
+              throw error('Grammar %s is empty.');
+            produce.l = i;
             symbol[p] = produce;
           }
           p = indexOf(tags, slice(name, -1)) + 2;
           symbol.m = p % 2;
           if (p > 1)
-            name = slice(name, -1);
+            name = slice(name, 0, -1);
           if (name[0] == '#') {
             name = slice(name, 1);
             symbol.t = name;
@@ -57,50 +61,68 @@ var Parse = function () {
           grammar[name] = symbol;
         }
       }
+      grammar[0] = symbol;  //默认根符号
+      return grammar;
     }
-    grammar[0] = symbol;  //默认根符号
-    return grammar;
-  }
 
-  function linkGrammar(grammar) {
-    var names = getOwnPropertyNames(grammar);
-    for (var i = names.length; i--;) {
-      link(names[i]);
-    }
     function link(name) {
-      var symbol = grammar[name], p, i;
-      if (symbol) {
-        if (!symbol.l) {
-          symbol.l = -1;
-          var produce, item;
-          for (p = 0; produce = symbol[p]; p++)
-            for (i = 0; item = produce[i]; i++)
-              produce[i] = link(produce[i]);
-          symbol.l = p;
+      var symbol = grammar[name], source, p, produce, i;
+      if (name[0] == '/') {
+        if (!symbol) {
+          i = indexOf(tags, slice(name, -1)) + 2;
+
+          symbol = grammar[name] = RegExp(slice(name, 1, -1 - (i > 1)) + '|', 'g');
+          symbol.m = i % 2;
+          symbol.g = +(i > 2);
         }
       }
-      else {
+      else if (!symbol) {
         i = indexOf(tags, slice(name, -1)) + 2;
-        var source = i > 1 ? slice(name, 0, -1) : name;
-        if (name[0] == '/') {
-          grammar[name] = symbol = RegExp(slice(source, 1, -1) + '|', 'g');
-        }
-        else if (i > 0) {
-          grammar[name] = symbol = object();  //要先占位symbolName，否则会死循环
-          source = link(source);
-          for (p = 0; produce = source[p]; p++)
-            symbol[p] = produce;
-          symbol.l = p;
-          if (source.t)
-            symbol.t = source.t;
-        }
-        else {
+        if (i < 1)
           throw error('Undefined symbol: %s', name);
-        }
+        symbol = grammar[name] = object();  //要先占位symbolName，否则会死循环
+        source = link(slice(name, 0, -1));
+        for (p = 0; produce = source[p]; p++)
+          symbol[p] = produce;
+        symbol.l = p;
+        if (source.t)
+          symbol.t = source.t;
         symbol.m = i % 2;
         symbol.g = +(i > 2);
       }
+      else if (!symbol.l) {
+        circle.push(name);
+        symbol.l = -1;
+        var must = 0;
+        for (p = 0; produce = symbol[p]; p++) {
+          var option = 1;
+          for (i = 0; name = produce[i]; i++) {
+            if (option)
+              check(name);
+            var item = produce[i] = link(name);
+            option &= item.m ^ 1;
+          }
+          must |= option ^ 1;
+        }
+        symbol.l = p;
+        symbol.m &= must;
+        circle.pop();
+      }
+
       return symbol;
+    }
+
+    function check(name) {
+      var i;
+      if (name[0] != '/') {
+        i = indexOf(tags, slice(name, -1));
+        if (i >= 0)
+          name = slice(name, 0, -1);
+        i = circle.indexOf(name);
+        if (i >= 0) {
+          throw error('Circle syntax: %s->%s', circle.slice(i).join('->'), name);
+        }
+      }
     }
   }
 
