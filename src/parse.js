@@ -15,9 +15,10 @@ var Parse = function () {
     if (isString(grammar))
       grammar = init(grammar);
 
-    var names = getOwnPropertyNames(grammar), circle = [];
+    var names = getOwnPropertyNames(grammar);
     for (var i = names.length; i--;) {
-      link(names[i]);
+      var name = names[i];
+      link(name, []);
     }
 
     return bind(parse, grammar);
@@ -65,7 +66,7 @@ var Parse = function () {
       return grammar;
     }
 
-    function link(name) {
+    function link(name, path) {
       var symbol = grammar[name], source, p, produce, i;
       if (name[0] == '/') {
         if (!symbol) {
@@ -81,7 +82,7 @@ var Parse = function () {
         if (i < 1)
           throw error('Undefined symbol: %s', name);
         symbol = grammar[name] = object();  //要先占位symbolName，否则会死循环
-        source = link(slice(name, 0, -1));
+        source = link(slice(name, 0, -1), path);
         for (p = 0; produce = source[p]; p++)
           symbol[p] = produce;
         symbol.l = p;
@@ -91,36 +92,36 @@ var Parse = function () {
         symbol.g = +(i > 2);
       }
       else if (!symbol.l) {
-        circle.push(name);
+        path.push(name);
         symbol.l = -1;
         var must = 0;
         for (p = 0; produce = symbol[p]; p++) {
-          var option = 1;
+          var circle = path;
           for (i = 0; name = produce[i]; i++) {
-            if (option)
-              check(name);
-            var item = produce[i] = link(name);
-            option &= item.m ^ 1;
+            if(path.length)
+              check(name, circle);
+            var item = produce[i] = link(name, circle);
+            if(item.m) circle = [];
           }
-          must |= option ^ 1;
+          must |= (circle==path) ^ 1;
         }
         symbol.l = p;
         symbol.m &= must;
-        circle.pop();
+        path.pop();
       }
 
       return symbol;
     }
 
-    function check(name) {
+    function check(name, path) {
       var i;
       if (name[0] != '/') {
         i = indexOf(tags, slice(name, -1));
         if (i >= 0)
           name = slice(name, 0, -1);
-        i = circle.indexOf(name);
+        i = path.indexOf(name);
         if (i >= 0) {
-          throw error('Circle syntax: %s->%s', circle.slice(i).join('->'), name);
+          throw error('Circle syntax: %s->%s', path.join('->'), name);
         }
       }
     }
