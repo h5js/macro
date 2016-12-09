@@ -2,10 +2,7 @@
 
 // parse = Parse(grammar)
 var Parse = function () {
-  var reSplitGrammar = /(?:^|[ \t]*\n)[ \t]*(?:\n[ \t]*)+|\s*$/;
-  var reSplitBlock = /[ \t]*\n[ \t]*/;
-  //var reSymbol = /(?:\/.*?\/|[A-Za-z]\w*|\d+)[?+*]?/g;
-  var reSymbol = /(?:\/(?:\\.|\[(?:\\.|[^\]])*]|[^\/*\n\r])(?:\\.|\[(?:\\.|[^\]])*]|[^/\n\r])*?\/|[A-Za-z]\w*|\d+)[?+*]?|(\S+)/g;
+  var reSplit = /((#?)([A-Za-z]\w*)([?+*])?\s*(:))|((?:[a-zA-Z]\w*|\/(?:\\.|\[(?:\\.|[^\]])*]|[^\/*\n\r])(?:\\.|\[(?:\\.|[^\]])*]|[^/\n\r])*?\/)[?+*]?)|(\n(?:\s*\n)*|\||;.*)|(\S+)/g;
   var tags = '?+*';
   var reNext = /\s*(?:\S+|$)/g;
 
@@ -25,44 +22,59 @@ var Parse = function () {
 
     // 创建语法的基础符号表
     function init(code) {
-      var grammar = object();
-      code = split(code, reSplitGrammar);
+      var grammar = object(), ms, i, name, symbol, produce, p, s;
+      code = trim(code);
+      reSplit.lastIndex = 0;
+      if (ms = exec(reSplit, code)) {
+        for (i = 1; !ms[i]; i++);
+        if (i != 1)
+          throw error('Grammar error: %s', ms[0]);
+        symbol = grammar[0] = object();
+        name = ms[3];
+        if (ms[2])
+          symbol.t = name;
+        symbol.m = (indexOf(tags, ms[4]) + 2) % 2;
+        p = 0;
+        produce = object();
+        s = 0;
 
-      for (var s = code.length; s--;) {
-        var block = code[s];
-        if (block) {
-          var i = indexOf(block, ':');
-          var name = trim(slice(block, 0, i));
-          if (!name)
-            throw error('Grammar has no named block.');
-          var symbol = object();
-          block = trim(slice(block, i + 1));
-          block = split(block, reSplitBlock);
-          var row;
-          for (var p = 0; row = block[p]; p++) {
-            var produce = object(), col;
-            for (i = 0, reSymbol.lastIndex = 0; col = reSymbol.exec(row); i++) {
-              if (col[1])
-                throw error('Grammar %s error: %s', name, col[1]);
-              produce[i] = col[0];
+        while (ms = exec(reSplit, code)) {
+          for (i = 1; !ms[i]; i++);
+          if (i == 1) {  // symbol
+            if (s) {
+              symbol[p++] = produce;
+              produce = object();
+              s = 0;
             }
-            if (!i)
-              throw error('Grammar %s is empty.');
-            produce.l = i;
-            symbol[p] = produce;
+            if(p) {
+              grammar[name] = symbol;
+              symbol = object();
+              p = 0;
+            }
+            name = ms[3];
+            if (ms[2])
+              symbol.t = name;
+            symbol.m = (indexOf(tags, ms[4]) + 2) % 2;
           }
-          p = indexOf(tags, slice(name, -1)) + 2;
-          symbol.m = p % 2;
-          if (p > 1)
-            name = slice(name, 0, -1);
-          if (name[0] == '#') {
-            name = slice(name, 1);
-            symbol.t = name;
+          else if (i == 6) { //item
+            produce[s++] = ms[0];
           }
-          grammar[name] = symbol;
+          else if (i == 7) { // spliter
+            if (s) {
+              symbol[p++] = produce;
+              produce = object();
+              s = 0;
+            }
+          }
         }
+
+        if (s)
+          symbol[p++] = produce;
+
+        if(p)
+          grammar[name] = symbol;
       }
-      grammar[0] = symbol;  //默认根符号
+
       return grammar;
     }
 
@@ -79,7 +91,7 @@ var Parse = function () {
       }
       else if (!symbol) {
         i = indexOf(tags, slice(name, -1)) + 2;
-        if (i < 1)
+        if (i < 2)
           throw error('Undefined symbol: %s', name);
         symbol = grammar[name] = object();  //要先占位symbolName，否则会死循环
         source = link(slice(name, 0, -1), path);
@@ -91,40 +103,30 @@ var Parse = function () {
         symbol.m = i % 2;
         symbol.g = +(i > 2);
       }
-      else if (!symbol.l) {
-        path.push(name);
-        symbol.l = -1;
-        var must = 0;
-        for (p = 0; produce = symbol[p]; p++) {
-          var circle = path;
-          for (i = 0; name = produce[i]; i++) {
-            if(path.length)
-              check(name, circle);
-            var item = produce[i] = link(name, circle);
-            if(item.m) circle = [];
+      else {
+        if (path.indexOf(name) >= 0)
+          throw error('Circle syntax: %s->%s', path.join('->'), name);
+        if (!symbol.l) {
+          path.push(name);
+          symbol.l = -1;
+          var must = 0;
+          for (p = 0; produce = symbol[p]; p++) {
+            var option = 1;
+            for (i = 0; name = produce[i]; i++) {
+              var item = produce[i] = link(name, option ? path : []);
+              option &= item.m ^ 1;
+            }
+            must |= option ^ 1;
           }
-          must |= (circle==path) ^ 1;
+          symbol.l = p;
+          symbol.m &= must;
+          path.pop();
         }
-        symbol.l = p;
-        symbol.m &= must;
-        path.pop();
       }
 
       return symbol;
     }
 
-    function check(name, path) {
-      var i;
-      if (name[0] != '/') {
-        i = indexOf(tags, slice(name, -1));
-        if (i >= 0)
-          name = slice(name, 0, -1);
-        i = path.indexOf(name);
-        if (i >= 0) {
-          throw error('Circle syntax: %s->%s', path.join('->'), name);
-        }
-      }
-    }
   }
 
   // parse(symbol, code)
@@ -192,9 +194,8 @@ var Parse = function () {
   }
 
   function readProduce(produce, serial) {
-    var token = object(), len = 0, back = serial.i;
-    for (var i = 0; i < produce.l; i++) {
-      var symbol = produce[i];
+    var token = object(), len = 0, back = serial.i, symbol;
+    for (var i = 0; symbol=produce[i]; i++) {
 
       var g = 0;
       do {
@@ -230,7 +231,7 @@ var Parse = function () {
   function get(re, serial) {
     var token;
     re.lastIndex = serial.i;
-    if (token = re.exec(serial.s)) {
+    if (token = exec(re, serial.s)) {
       return token[0];
     }
   }
