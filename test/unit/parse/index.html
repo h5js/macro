@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>lib.js UTC</title>
+  <link rel='stylesheet' href='https://h5js.github.io/inc/mocha.css' />
+  <script src='https://h5js.github.io/inc/mocha.js'></script>
+  <script src='https://h5js.github.io/inc/should.js'></script>
+</head>
+<body id="mocha">
+<script>mocha.setup({ui:'bdd', allowUncaught:true})</script>
+<script src="../../../src/lib.js"></script>
+<script src="../../../src/parse.js"></script>
+<script src="https://h5js.github.io/its/its.js" its="grammar.js,es7.js"></script>
+<script>mocha.run()</script>
+</body>
+</html>
